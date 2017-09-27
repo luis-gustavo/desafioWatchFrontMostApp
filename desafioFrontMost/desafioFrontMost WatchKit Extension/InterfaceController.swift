@@ -17,32 +17,39 @@ class InterfaceController: WKInterfaceController {
     @IBOutlet var timer: WKInterfaceTimer!
     @IBOutlet var button: WKInterfaceButton!
 	
-	var jokes: [Joke]!
+	var jokes: [Joke] = []
     var intervalTimer = Timer()
+    var didTellJoke = false
+    var currentJoke: Joke?
+
     
     override func awake(withContext context: Any?) {
         super.awake(withContext: context)
         self.createJokes()
-		
-        // Configure interface objects here.
-        textLabel.setText("O que é um pontinho vermelho numa árvore?")
-        button.setHidden(true)
-        restartTimer()
+        showJoke()
     }
     
     override func willActivate() {
-        // This method is called when watch view controller is about to be visible to user
         super.willActivate()
     }
     
     override func didDeactivate() {
-        // This method is called when watch view controller is no longer visible
         super.didDeactivate()
+        
+        if didTellJoke {
+            if #available(watchOSApplicationExtension 4.0, *) {
+                WKExtension.shared().isFrontmostTimeoutExtended = true
+            } else {/*do nothing*/}
+        } else {
+            if #available(watchOSApplicationExtension 4.0, *) {
+                WKExtension.shared().isFrontmostTimeoutExtended = false
+            } else {/*do nothing*/}
+        }
     }
 
     func restartTimer () {
         //Configurando WKInterfaceTimer
-        let interval: TimeInterval = 60.0
+        let interval: TimeInterval = 15.0
         timer.stop()
         let time = Date(timeIntervalSinceNow: interval)
         timer.setDate(time)
@@ -59,16 +66,30 @@ class InterfaceController: WKInterfaceController {
                                                   repeats: false)
     }
     
-    func  showAnswer() {
+    func showAnswer() {
         button.setHidden(false)
         timer.setHidden(true)
-        textLabel.setText("Um MORANGOTANGO")
+        textLabel.setText(self.currentJoke?.answer)
+        didTellJoke = true
+    }
+    
+    func showJoke() {
+        setRandomJoke()
+        textLabel.setText(currentJoke?.question)
+        button.setHidden(true)
+        restartTimer()
+        didTellJoke = false
+    }
+    
+    func setRandomJoke() {
+        let randomIndex = Int(arc4random_uniform(UInt32(jokes.count)))
+        self.currentJoke = jokes[randomIndex]
     }
     
     @IBAction func buttonAction() {
         timer.setHidden(false)
         button.setHidden(true)
-        textLabel.setText("O que é um pontinho vermelho numa árvore?")
+        showJoke()
         restartTimer()
     }
     
