@@ -17,12 +17,17 @@ class InterfaceController: WKInterfaceController {
     @IBOutlet var timer: WKInterfaceTimer!
     @IBOutlet var button: WKInterfaceButton!
 	
+    //Mark: - Initializations
 	var jokes: [Joke]!
     var intervalTimer = Timer()
+    let notificationManager = UNUserNotificationCenter.current()
     
     override func awake(withContext context: Any?) {
         super.awake(withContext: context)
         self.createJokes()
+        
+        notificationManager.requestAuthorization(options: [.alert, .sound, .badge]) { (success, error) in
+        }
 		
         // Configure interface objects here.
         textLabel.setText("O que é um pontinho vermelho numa árvore?")
@@ -47,6 +52,7 @@ class InterfaceController: WKInterfaceController {
         let time = Date(timeIntervalSinceNow: interval)
         timer.setDate(time)
         timer.start()
+        createNotication()
         
         //Configurando Timer
         if intervalTimer.isValid {
@@ -63,6 +69,7 @@ class InterfaceController: WKInterfaceController {
         button.setHidden(false)
         timer.setHidden(true)
         textLabel.setText("Um MORANGOTANGO")
+        WKInterfaceDevice.current().play(.success)
     }
     
     @IBAction func buttonAction() {
@@ -70,6 +77,25 @@ class InterfaceController: WKInterfaceController {
         button.setHidden(true)
         textLabel.setText("O que é um pontinho vermelho numa árvore?")
         restartTimer()
+    }
+    
+    func createNotication(){
+        let content = UNMutableNotificationContent()
+        content.title = "Nova piada"
+        content.subtitle = ""
+        content.body = "O que é um pontinho vermelho numa árvore?"
+        content.badge = 1
+        
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 10, repeats: false)
+        
+        
+        let requestIdentifier = "demo1"
+        
+        let request = UNNotificationRequest(identifier: requestIdentifier, content: content, trigger: trigger)
+        
+        notificationManager.add(request) { (error) in
+            
+        }
     }
     
 }
