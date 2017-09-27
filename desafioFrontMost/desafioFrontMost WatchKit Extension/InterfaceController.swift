@@ -29,6 +29,38 @@ class InterfaceController: WKInterfaceController {
         super.didDeactivate()
     }
 
+    func restartTimer () {
+        //Configurando WKInterfaceTimer
+        let interval: TimeInterval = 60.0
+        timer.stop()
+        let time = Date(timeIntervalSinceNow: interval)
+        timer.setDate(time)
+        timer.start()
+        
+        //Configurando Timer
+        if intervalTimer.isValid {
+            intervalTimer.invalidate()
+        }
+        self.intervalTimer = Timer.scheduledTimer(timeInterval: interval,
+                                                  target: self,
+                                                  selector: #selector(self.showAnswer),
+                                                  userInfo: nil,
+                                                  repeats: false)
+    }
+    
+    func  showAnswer() {
+        button.setHidden(false)
+        timer.setHidden(true)
+        textLabel.setText("Um MORANGOTANGO")
+    }
+    
+    @IBAction func buttonAction() {
+        timer.setHidden(false)
+        button.setHidden(true)
+        textLabel.setText("O que é um pontinho vermelho numa árvore?")
+        restartTimer()
+    }
+    
 }
 
 extension InterfaceController {
