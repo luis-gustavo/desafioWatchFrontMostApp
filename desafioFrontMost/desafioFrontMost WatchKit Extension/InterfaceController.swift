@@ -9,23 +9,37 @@
 import WatchKit
 import Foundation
 
-
 class InterfaceController: WKInterfaceController {
+    
+    var didTellJoke = false
 
     override func awake(withContext context: Any?) {
         super.awake(withContext: context)
-        
-        // Configure interface objects here.
     }
     
     override func willActivate() {
-        // This method is called when watch view controller is about to be visible to user
         super.willActivate()
+        if didTellJoke {
+            // mostrar resposta
+        } else {
+            // mostrar nova piada
+        }
     }
     
     override func didDeactivate() {
-        // This method is called when watch view controller is no longer visible
         super.didDeactivate()
+        
+        if didTellJoke {
+            // start timer
+            // play haptic when time is over
+            if #available(watchOSApplicationExtension 4.0, *) {
+                WKExtension.shared().isFrontmostTimeoutExtended = true
+            } else {/*do nothing*/}
+        } else {
+            if #available(watchOSApplicationExtension 4.0, *) {
+                WKExtension.shared().isFrontmostTimeoutExtended = false
+            } else {/*do nothing*/}
+        }
     }
-
+    
 }
