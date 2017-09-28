@@ -23,10 +23,17 @@ class InterfaceController: WKInterfaceController {
     var didTellJoke = false
     var currentJoke: Joke?
     let notificationManager = UNUserNotificationCenter.current()
+    let timeToAnswer: Double = 15.0
+    var didCreateNewJokeNotification = false
+    let answerTitle = "Acabou seu tempo!"
+    let answerBody = "Descubra a resposta hahaha"
+    let newJokeTitle = "Nova piada!"
+    let newJokeBody = "Uma nova piada quentinha para você hahah"
     
     override func awake(withContext context: Any?) {
         super.awake(withContext: context)
         self.createJokes()
+        self.didCreateNewJokeNotification = false
 
         notificationManager.requestAuthorization(options: [.alert, .sound, .badge]) { (success, error) in
         }
@@ -34,7 +41,6 @@ class InterfaceController: WKInterfaceController {
         // Configure interface objects here.
         textLabel.setText("O que é um pontinho vermelho numa árvore?")
         button.setHidden(true)
-        restartTimer()
         showJoke()
     }
     
@@ -44,7 +50,6 @@ class InterfaceController: WKInterfaceController {
     
     override func didDeactivate() {
         super.didDeactivate()
-        
         if didTellJoke {
             if #available(watchOSApplicationExtension 4.0, *) {
                 WKExtension.shared().isFrontmostTimeoutExtended = true
@@ -54,16 +59,25 @@ class InterfaceController: WKInterfaceController {
                 WKExtension.shared().isFrontmostTimeoutExtended = false
             } else {/*do nothing*/}
         }
+        
+        WKExtension.shared().scheduleBackgroundRefresh(withPreferredDate: Date(timeIntervalSinceNow: 60 * 60 * 4), userInfo: nil) { (error) in
+            if error == nil {
+                self.showJokeFromBackground()
+            }
+        }
     }
+    
+    
 
     func restartTimer () {
         //Configurando WKInterfaceTimer
-        let interval: TimeInterval = 15.0
+        let interval: TimeInterval = timeToAnswer
         timer.stop()
         let time = Date(timeIntervalSinceNow: interval)
         timer.setDate(time)
         timer.start()
-        createNotication()
+        
+        createNotification(with: createNotificationContent(title: answerTitle, body: answerBody), trigger: createTrigger())
         
         //Configurando Timer
         if intervalTimer.isValid {
@@ -76,13 +90,26 @@ class InterfaceController: WKInterfaceController {
                                                   repeats: false)
     }
     
+    func createNotificationContent(title: String, body: String) -> UNMutableNotificationContent {
+        let newContent = UNMutableNotificationContent()
+        newContent.title = title
+        newContent.body = body
+        
+        return newContent
+    }
+    
+    func createTrigger() -> UNTimeIntervalNotificationTrigger {
+        return UNTimeIntervalNotificationTrigger(timeInterval: timeToAnswer, repeats: false)
+    }
+    
     func showAnswer() {
         button.setHidden(false)
         timer.setHidden(true)
-        textLabel.setText("Um MORANGOTANGO")
-        WKInterfaceDevice.current().play(.success)
+        if WKExtension.shared().applicationState == .background {
+            WKInterfaceDevice.current().play(.success)
+        } else {/*do nothing*/}
         textLabel.setText(self.currentJoke?.answer)
-        didTellJoke = true
+        didTellJoke = false
     }
     
     func showJoke() {
@@ -90,7 +117,12 @@ class InterfaceController: WKInterfaceController {
         textLabel.setText(currentJoke?.question)
         button.setHidden(true)
         restartTimer()
-        didTellJoke = false
+        didTellJoke = true
+    }
+    
+    func showJokeFromBackground() {
+        createNotification(with: createNotificationContent(title: newJokeTitle, body: newJokeBody), trigger: createTrigger())
+        didCreateNewJokeNotification = true
     }
     
     func setRandomJoke() {
@@ -105,27 +137,21 @@ class InterfaceController: WKInterfaceController {
         restartTimer()
     }
     
-    func createNotication(){
-        let content = UNMutableNotificationContent()
-        content.title = "Nova piada"
-        content.subtitle = ""
-        content.body = "O que é um pontinho vermelho numa árvore?"
-        content.badge = 1
+    func createNotification(with content: UNMutableNotificationContent, trigger: UNTimeIntervalNotificationTrigger) {
+        guard didCreateNewJokeNotification == false else { return }
         
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 10, repeats: false)
-        
-        
-        let requestIdentifier = "demo1"
+        let requestIdentifier = UUID().uuidString
+        print(content.title)
         
         let request = UNNotificationRequest(identifier: requestIdentifier, content: content, trigger: trigger)
         
         notificationManager.add(request) { (error) in
             
         }
-    }
-    
-}
 
+    }
+}
+    
 extension InterfaceController {
     
     func createJokes() {
